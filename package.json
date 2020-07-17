@@ -1,0 +1,21 @@
+{
+  "name": "ydxx-node",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^5.1.0",
+    "curlrequest": "^1.0.1",
+    "dotenv": "^8.2.0",
+    "fs-extra": "^9.0.1",
+    "inquirer": "^7.2.0",
+    "log4js": "^6.3.0",
+    "moment": "^2.27.0",
+    "whos-pomelo-node-client-websocket": "^0.1.0"
+  }
+}

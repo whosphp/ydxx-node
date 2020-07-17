@@ -1,0 +1,182 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>树状图</title>
+    <style>
+        .node circle {
+            fill: #fff;
+            stroke: steelblue;
+            stroke-width: 1.5px;
+        }
+
+        .node {
+            font: 12px sans-serif;
+        }
+
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 1.5px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@4.8.0/dist/echarts.min.js"></script>
+</head>
+
+<body>
+<h3 id="updatedAt"></h3>
+<div id="main" style="width: 100%; height: 100%"></div>
+</body>
+<script>
+
+    var myChart = echarts.init(document.getElementById('main'));
+
+
+
+    function getRoads (map) {
+        let idRoads = []
+        let _map = {}
+
+        function makeRoads (map, width, idStack) {
+            idStack.push(map.id)
+
+            if (! map.children.length) {
+                idRoads.push(idStack)
+            }
+
+            _map[map.id] = {
+                id: map.id,
+                name: map.name,
+            }
+
+            if (map.hasOwnProperty('children') && map.children.length) {
+                map.children.forEach(m => {
+                    makeRoads(m, width + 1, JSON.parse(JSON.stringify(idStack)))
+                })
+            }
+        }
+
+        makeRoads(map, 0, [])
+
+        return {
+            idRoads,
+            maps: _map
+        }
+    }
+
+    var idRoads = []
+    var maps = []
+
+    function moveTo(idRoads, from, to) {
+        let path = []
+
+        for (let i = 0; i < idRoads.length; ++i) {
+            let road = idRoads[i]
+            let fromIndex = road.indexOf(from)
+            let toIndex = road.indexOf(to)
+
+            if (fromIndex > -1 && toIndex > -1) {
+                if (fromIndex <= toIndex) {
+                    path = road.slice(fromIndex, toIndex);
+                } else {
+                    path = road.slice(toIndex, fromIndex).reverse()
+                }
+
+                return path
+            }
+        }
+
+        for (let i = 0; i < idRoads.length; ++i) {
+            let road = idRoads[i]
+            let fromIndex = road.indexOf(from)
+
+            if (fromIndex > -1) {
+                path = path.concat(road.slice(0, fromIndex).reverse())
+                break
+            }
+        }
+
+        for (let i = 0; i < idRoads.length; ++i) {
+            let road = idRoads[i]
+            let toIndex = road.indexOf(to)
+
+            if (toIndex > -1) {
+                path = path.concat(road.slice(1, toIndex + 1))
+                break
+            }
+        }
+
+        return path
+    }
+
+    $.get('maps.json', function (res) {
+        $('#updatedAt').html(res.updated_at)
+        let data = JSON.parse(JSON.stringify(res.maps).replace(/next/g, 'children'))
+
+        idRoads = getRoads(data).idRoads
+        maps = getRoads(data).maps
+
+        myChart.hideLoading();
+
+        myChart.setOption(option = {
+            tooltip: {
+                trigger: 'item',
+                triggerOn: 'mousemove',
+                formatter: function (params) {
+                    return params.data.players.map(p => p.level + ':' + p.nickname).join("</br>");
+                }
+            },
+            series: [
+                {
+                    type: 'tree',
+
+                    data: [data],
+
+                    top: '1%',
+                    left: '7%',
+                    bottom: '1%',
+                    right: '20%',
+
+                    symbolSize:(rawValue, params) => {
+                        if (params.data.hasOwnProperty('players')) {
+                            return params.data.players.length > 0 ? params.data.players.length + 1 : 1
+                        } else {
+                            return 1
+                        }
+                    },
+
+                    label: {
+                        normal: {
+                            position: 'left',
+                            verticalAlign: 'middle',
+                            align: 'right',
+                            fontSize: 14,
+                            formatter: function (params) {
+                                let num = 0;
+
+                                if (params.data.hasOwnProperty('players')) {
+                                    num = params.data.players.length
+                                }
+
+                                return params.data.name + ':' + num
+                            }
+                        }
+                    },
+
+                    leaves: {
+                        label: {
+                            position: 'right',
+                            verticalAlign: 'middle',
+                            align: 'left'
+                        }
+                    },
+
+                    expandAndCollapse: false,
+                    animationDuration: 550,
+                    animationDurationUpdate: 750
+                }
+            ]
+        });
+    });
+</script>
+</html>
