@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Monsters</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+<div id="app">
+    <el-input v-model="search" size="mini" placeholder="输入关键字搜索"></el-input>
+    <el-table :data="tableData" size="mini">
+        <el-table-column label="类型">
+            <template slot-scope="scope">
+                <span v-html="scope.row.name"></span>
+            </template>
+        </el-table-column>
+        <el-table-column prop="level" label="等级"></el-table-column>
+        <el-table-column prop="hp" label="血"></el-table-column>
+        <el-table-column prop="physical_defense" label="物防"></el-table-column>
+        <el-table-column prop="magic_defense" label="魔防"></el-table-column>
+        <el-table-column prop="physical_damage" label="物伤"></el-table-column>
+        <el-table-column prop="magic_damage" label="魔伤"></el-table-column>
+        <el-table-column prop="at" label="副本"></el-table-column>
+        <el-table-column prop="physical_crit" label="物爆"></el-table-column>
+        <el-table-column prop="magic_crit" label="法爆"></el-table-column>
+        <el-table-column prop="mp" label="蓝"></el-table-column>
+        <el-table-column prop="speed" label="速"></el-table-column>
+    </el-table>
+</div>
+</body>
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios@0.19.2/dist/axios.min.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script>
+    new Vue({
+        el: "#app",
+        data() {
+            return {
+                monsters: [],
+                search: '',
+            }
+        },
+        computed: {
+            tableData() {
+                return this.monsters.filter(data => {
+                    if (!this.search) {
+                        return true
+                    }
+
+                    let searchArr = this.search.toLowerCase().split(' ')
+
+                    if (searchArr.includes(data.name.toLowerCase())) {
+                        return true
+                    }
+
+                    if (searchArr.includes(data.at.toLowerCase())) {
+                        return true
+                    }
+
+                    return false
+                })
+            }
+        },
+        created() {
+            let attributeNeedToRound = [
+                'hp', 'mp', 'speed', 'physical_damage', 'physical_defense', 'physical_crit',
+                'magic_damage', 'magic_defense', 'magic_crit'
+            ]
+
+            let monsterAtScreen = {}
+            axios.get('screens.json')
+                .then(res => {
+
+                    Object.values(res.data).forEach(s => {
+                        s.monster.forEach(mid => {
+                            if (! monsterAtScreen.hasOwnProperty(mid)) {
+                                monsterAtScreen[mid] = []
+                            }
+
+                            if (! monsterAtScreen[mid].includes(s.name)) {
+                                monsterAtScreen[mid].push(s.name)
+                            }
+                        })
+                    })
+
+                    axios.get('monsters.json')
+                        .then(res => {
+                            this.monsters = Object.values(res.data).map(m => {
+                                attributeNeedToRound.map(attr => {
+                                    m[attr] = Math.round(m[attr])
+                                })
+
+                                m.at = monsterAtScreen[m._id].join(' ')
+
+                                return m
+                            })
+                        })
+                })
+
+
+        }
+    })
+</script>
+</html>

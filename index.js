@@ -12,7 +12,12 @@ let gatePomelo = pomelo_client.create()
 logger.level = process.env.XX_LOG_LEVEL
 logger.info('starting...')
 
-global.players = {}
+const global = {
+    players: [],
+    mid: '',
+    monsters: {},
+    battleCount: 0
+}
 
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -57,11 +62,110 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                         return
                     }
 
+                    const routes = [
+                        ["connector.teamHandler.createdTeam", "createdTeam"],
+                        ["connector.teamHandler.switchCombatScreen", "switchCombatScreen"],
+                        ["connector.teamHandler.startCombat", "startCombat"],
+                        ["connector.teamHandler.startCombatTower", "startCombatTower"],
+                        ["connector.teamHandler.getTeamList", "getTeamList"]
+                    ]
+                    let routeHandlers = {}
+                    routes.forEach(route => {
+                        routeHandlers[route[1]] = function (params) {
+                            params = params || {}
+
+                            return new Promise((resolve, reject) => {
+                                pomelo.request(route[0], params, function (data) {
+                                    resolve(data)
+                                })
+                            })
+                        }
+                    })
+
+                    // 创建队伍 获取场景 选择场景 开始战斗
+
+                    pomelo.on("onStartBat", res => {
+                        res.data.initData.map(m => {
+                            if (m.is_palyer !== true) {
+                                global.monsters[m._id] = m
+                            }
+                        })
+                    })
+
+                    pomelo.on("onRoundBatEnd", res => {
+                        if (res.data.win > 0) {
+                            global.battleCount++
+                        }
+                    })
+
+                    async function crawlerMonsters() {
+                        let res
+
+                        // 获取场景
+                        res = await routeHandlers.getTeamList({ mid: global.mid})
+                        let screens = res.data.screens
+
+                        // 创建队伍
+                        await routeHandlers.createdTeam({mid: global.mid})
+
+                        for (let i = 0; i < screens.length; i++) {
+                            let screen = screens[i]
+                            // 排除副本
+                            if (["每日冒险", "藏宝图"].includes(screen.name)) {
+                                continue
+                            }
+
+                            // 切换场景
+                            await routeHandlers.switchCombatScreen({cbatid: screen._id})
+
+                            // 每个场景战斗5次
+                            for (let j = 0; j < 5; j++) {
+                                let currentBattleCount = global.battleCount
+                                await routeHandlers.startCombat({ cbatid: screen._id})
+                                while (global.battleCount === currentBattleCount) {
+                                    await sleep(8100)
+                                }
+                            }
+                        }
+                    }
+
+
                     let user_id = res.data.myInfo._id
 
                     logger.debug(res.data)
                     logger.debug(Object.keys(res.data))
                     logger.debug(res.data.map)
+
+                    global.mid = res.data.map.id
+
+                    if (true) {
+                        routeHandlers.getTeamList({ mid: global.mid})
+                            .then(res => {
+                                let screens = {}
+                                res.data.screens.map(s => {
+                                    screens[s._id] = s
+                                })
+
+                                fs.outputFile('public/screens.json', JSON.stringify(screens), err => {
+                                    if (err) {
+                                        logger.warn(err)
+                                    } else {
+                                        logger.info("generate screens.json success")
+                                    }
+                                })
+                            })
+                    }
+
+
+                    if (false) {
+                        crawlerMonsters().then(function () {
+                            fs.outputFile('public/monsters.json', JSON.stringify(global.monsters), err => {
+                                if (err) {
+                                    logger.warn(err)
+                                }
+                            })
+                        })
+                    }
 
                     function moveToNewMap(mid) {
                         return new Promise((resolve, reject) => {
@@ -211,7 +315,7 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                         })
                     }
 
-                    discoverMapsTask()
+                    // discoverMapsTask()
 
                     if (false) {
                         discoverMapsTask()
