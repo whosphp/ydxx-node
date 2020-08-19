@@ -28,6 +28,7 @@ function sleep(ms) {
 let email = process.env.XX_EMAIL
 let pwd = process.env.XX_PWD
 let watchedUsers = process.env.XX_WATCHED_USERS.split(',')
+let moveSleepTime = 4010
 
 gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
     gatePomelo.request("gate.gateHandler.queryEntry", {
@@ -138,7 +139,7 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
 
                     global.mid = res.data.map.id
 
-                    if (true) {
+                    if (false) {
                         routeHandlers.getTeamList({ mid: global.mid})
                             .then(res => {
                                 let screens = {}
@@ -173,6 +174,7 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                                 mid: mid
                             }, function (data) {
                                 logger.debug('moveToNewMap')
+                                logger.debug(data)
                                 logger.debug(data.map)
 
                                 if (data.hasOwnProperty('map') && data.hasOwnProperty('players')) {
@@ -192,9 +194,8 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                             let waitingToDelete = []
 
                             for (let i = 0; i < map.next.length; i++) {
+                                await sleep(moveSleepTime)
                                 let data = await moveToNewMap(map.next[i])
-
-                                await sleep(1000)
 
                                 if (data.map !== undefined) {
                                     map.next[i] = await discoverMaps(data.map, players)
@@ -205,6 +206,7 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                                     waitingToDelete.push(i)
                                 }
 
+                                await sleep(moveSleepTime)
                                 let dt = await moveTo(map.id)
                                 if (dt.hasOwnProperty('players')) {
                                     map.players = dt.players.filter(p => p._id !== user_id)
@@ -242,7 +244,7 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                         if (map.up.length > 0) {
                             let data = await moveTo(map.up[0])
 
-                            await sleep(1000)
+                            await sleep(moveSleepTime)
 
                             await backToRoot(data.map)
                         }
@@ -289,27 +291,29 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                             let rootMap = { id: 1, name: '聚灵城', is_city: true, up: [], next: [ 2, 3 ] }
                             let players = {}
 
-                            discoverMaps(JSON.parse(JSON.stringify(rootMap)), players).then(maps => {
-                                logger.info('stop to discover maps...')
+                            sleep(moveSleepTime).then(_ => {
+                                discoverMaps(JSON.parse(JSON.stringify(rootMap)), players).then(maps => {
+                                    logger.info('stop to discover maps...')
 
-                                global.players = players
+                                    global.players = players
 
-                                let data = {
-                                    players: players,
-                                    maps: maps,
-                                    updated_at: moment().format("DD HH:mm")
-                                }
-                                
-                                fs.outputFile('public/maps.json', JSON.stringify(data), err => {
-                                    if (err) {
-                                        logger.warn(err)
+                                    let data = {
+                                        players: players,
+                                        maps: maps,
+                                        updated_at: moment().format("DD HH:mm")
                                     }
-                                })
 
-                                fs.outputFile('public/roads.json', JSON.stringify(getRoads(maps)), err => {
-                                    if (err) {
-                                        logger.warn(err)
-                                    }
+                                    fs.outputFile('public/maps.json', JSON.stringify(data), err => {
+                                        if (err) {
+                                            logger.warn(err)
+                                        }
+                                    })
+
+                                    fs.outputFile('public/roads.json', JSON.stringify(getRoads(maps)), err => {
+                                        if (err) {
+                                            logger.warn(err)
+                                        }
+                                    })
                                 })
                             })
                         })
@@ -317,7 +321,7 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
 
                     // discoverMapsTask()
 
-                    if (false) {
+                    if (true) {
                         discoverMapsTask()
                         setInterval(function () {
                             discoverMapsTask()

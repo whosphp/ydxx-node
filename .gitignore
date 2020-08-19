@@ -7,3 +7,4 @@ public/screens.json
 *.log
 .env
 .yarn.lock
+.DS_Store
