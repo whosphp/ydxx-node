@@ -174,7 +174,7 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                                 mid: mid
                             }, function (data) {
                                 logger.debug('moveToNewMap')
-                                logger.debug(data)
+                                // logger.debug(data)
                                 logger.debug(data.map)
 
                                 if (data.hasOwnProperty('map') && data.hasOwnProperty('players')) {
@@ -288,7 +288,7 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                             logger.info('back to root...')
                             logger.info('start to discover maps...')
 
-                            let rootMap = { id: 1, name: '聚灵城', is_city: true, up: [], next: [ 2, 3 ] }
+                            let rootMap = { id: 1, name: '聚灵城-广场', is_city: true, up: [], next: [ 1000, 1001, 1002, 1003, 2, 3 ] }
                             let players = {}
 
                             sleep(moveSleepTime).then(_ => {
