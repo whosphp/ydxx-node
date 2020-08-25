@@ -284,11 +284,10 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                     }
 
                     function discoverMapsTask() {
-                        backToRoot(res.data.map).then(_ => {
+                        backToRoot(res.data.map).then(rootMap => {
                             logger.info('back to root...')
                             logger.info('start to discover maps...')
 
-                            let rootMap = { id: 1, name: '聚灵城-广场', is_city: true, up: [], next: [ 1000, 1001, 1002, 1003, 2, 3 ] }
                             let players = {}
 
                             sleep(moveSleepTime).then(_ => {
