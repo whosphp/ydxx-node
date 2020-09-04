@@ -174,7 +174,7 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                                 mid: mid
                             }, function (data) {
                                 logger.debug('moveToNewMap')
-                                // logger.debug(data)
+                                logger.debug(data)
                                 logger.debug(data.map)
 
                                 if (data.hasOwnProperty('map') && data.hasOwnProperty('players')) {
@@ -186,6 +186,19 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                         });
                     }
 
+                    function moveTo(mid) {
+                        return new Promise((resolve, reject) => {
+                            pomelo.request('connector.playerHandler.moveToNewMap', {
+                                mid: mid
+                            }, function (data) {
+                                logger.debug(data)
+                                logger.debug('moveTo')
+                                logger.debug(data.map)
+                                resolve(data)
+                            })
+                        })
+                    }
+
                     async function discoverMaps(map, players) {
                         // 去除loop节点
                         map.next = map.next.filter(n => n > map.id)
@@ -193,8 +206,10 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                         if (map.next.length > 0) {
                             let waitingToDelete = []
 
+                            logger.debug(map.next)
                             for (let i = 0; i < map.next.length; i++) {
                                 await sleep(moveSleepTime)
+                                logger.debug(map.next[i])
                                 let data = await moveToNewMap(map.next[i])
 
                                 if (data.map !== undefined) {
@@ -207,6 +222,7 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                                 }
 
                                 await sleep(moveSleepTime)
+                                logger.debug(map)
                                 let dt = await moveTo(map.id)
                                 if (dt.hasOwnProperty('players')) {
                                     map.players = dt.players.filter(p => p._id !== user_id)
@@ -228,25 +244,13 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                         return map
                     }
 
-                    function moveTo(mid) {
-                        return new Promise((resolve, reject) => {
-                            pomelo.request('connector.playerHandler.moveToNewMap', {
-                                mid: mid
-                            }, function (data) {
-                                logger.debug('moveTo')
-                                logger.debug(data.map)
-                                resolve(data)
-                            })
-                        })
-                    }
-
                     async function backToRoot(map) {
                         if (map.up.length > 0) {
                             let data = await moveTo(map.up[0])
 
                             await sleep(moveSleepTime)
 
-                            await backToRoot(data.map)
+                            return await backToRoot(data.map)
                         }
 
                         return map
