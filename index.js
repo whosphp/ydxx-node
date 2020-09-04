@@ -27,8 +27,7 @@ function sleep(ms) {
 
 let email = process.env.XX_EMAIL
 let pwd = process.env.XX_PWD
-let watchedUsers = process.env.XX_WATCHED_USERS.split(',')
-let moveSleepTime = 4010
+let moveSleepTime = 1010
 
 gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
     gatePomelo.request("gate.gateHandler.queryEntry", {
@@ -177,8 +176,8 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                                 logger.debug(data)
                                 logger.debug(data.map)
 
-                                if (data.hasOwnProperty('map') && data.hasOwnProperty('players')) {
-                                    data.map.players = data.players.filter(p => p._id !== user_id)
+                                if (data.hasOwnProperty('map') && data.hasOwnProperty('p_count')) {
+                                    data.map.p_count = data.p_count - 1
                                 }
 
                                 resolve(data)
@@ -215,7 +214,7 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                                 if (data.map !== undefined) {
                                     map.next[i] = await discoverMaps(data.map, players)
 
-                                    players[data.map.id] = data.map.players
+                                    players[data.map.id] = data.map.p_count
 
                                 } else {
                                     waitingToDelete.push(i)
@@ -224,15 +223,15 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
                                 await sleep(moveSleepTime)
                                 logger.debug(map)
                                 let dt = await moveTo(map.id)
-                                if (dt.hasOwnProperty('players')) {
-                                    map.players = dt.players.filter(p => p._id !== user_id)
+                                if (dt.hasOwnProperty('p_count')) {
+                                    map.p_count = dt.p_count - 1
 
-                                    players[map.id] = map.players
+                                    players[map.id] = map.p_count
 
                                 } else {
-                                    map.players = []
+                                    map.p_count = 0
 
-                                    players[map.id] = []
+                                    players[map.id] = 0
                                 }
                             }
 
@@ -326,45 +325,6 @@ gatePomelo.init({host: "yundingxx.com", port: 3014, log: false}, function () {
 
                     if (true) {
                         discoverMapsTask()
-                        setInterval(function () {
-                            discoverMapsTask()
-                        }, 600000)
-
-                        setInterval(function () {
-
-                            let allPlayers = []
-
-                            for (let key in global.players) {
-                                allPlayers.concat(global.players[key])
-                            }
-
-
-                            watchedUsers.map(nickname => {
-
-                                let p = allPlayers.find(player => player.nickname === nickname)
-
-                                if (p !== undefined) {
-                                    logger.info('can not find ' + nickname)
-
-                                    curl.request({
-                                        url: 'https://api2.day.app:4443/SDiGroQtDmnAf7j9h2YgLD/ydxx-offline'
-                                    }, function (err, data) {
-                                        // console.log(err, data)
-                                    })
-
-                                } else {
-                                    logger.info('find ' + nickname)
-
-                                    // curl.request({
-                                    //     url: 'https://api2.day.app:4443/SDiGroQtDmnAf7j9h2YgLD/ydxx-online'
-                                    // }, function (err, data) {
-                                    //     // console.log(err, data)
-                                    // })
-                                }
-
-                            })
-
-                        }, 300000)
                     }
 
                     // let questions = [

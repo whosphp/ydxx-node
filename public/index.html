@@ -111,7 +111,10 @@
 
     $.get('maps.json', function (res) {
         $('#updatedAt').html(res.updated_at)
+        let pCount = res.players
         let data = JSON.parse(JSON.stringify(res.maps).replace(/next/g, 'children'))
+
+        console.log(data)
 
         idRoads = getRoads(data).idRoads
         maps = getRoads(data).maps
@@ -122,9 +125,6 @@
             tooltip: {
                 trigger: 'item',
                 triggerOn: 'mousemove',
-                formatter: function (params) {
-                    return params.data.players.map(p => p.level + ':' + p.nickname).join("</br>");
-                }
             },
             series: [
                 {
@@ -138,8 +138,8 @@
                     right: '20%',
 
                     symbolSize:(rawValue, params) => {
-                        if (params.data.hasOwnProperty('players')) {
-                            return params.data.players.length > 0 ? params.data.players.length + 1 : 1
+                        if (pCount.hasOwnProperty(params.data.id)) {
+                            return pCount[params.data.id] > 0 ? pCount[params.data.id] : 1
                         } else {
                             return 1
                         }
@@ -154,8 +154,8 @@
                             formatter: function (params) {
                                 let num = 0;
 
-                                if (params.data.hasOwnProperty('players')) {
-                                    num = params.data.players.length
+                                if (pCount.hasOwnProperty(params.data.id)) {
+                                    num = pCount[params.data.id]
                                 }
 
                                 return params.data.name + ':' + num
